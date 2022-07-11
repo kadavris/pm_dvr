@@ -67,6 +67,8 @@ my $error_text = '';
 my $consequtive_errors = 0; # bail out if too many in a row
 my @log_buffer; # will hold ffmpeg's output for error analysis
 
+my $ok_status_posted = 0; # flag indicating that OK status were posted already, so we're not spamming
+
 while( 1 )
 {
   $error_text = check_space( $o{ 'recent dir' }, $o{ 'limit total size' } );
@@ -105,8 +107,6 @@ while( 1 )
     next;
   }
 
-  save_status( 0, 'OK' ); # re-set initial state
-
   while( <$ffh> )
   {
     do_log( $_ );
@@ -126,6 +126,8 @@ while( 1 )
 
       last;
     } # if ( /^\[error\].+: Connection refused/ )
+
+    save_status( 0, 'OK' ); # re-set initial state
   } # while( <$ffh> )
 
   close $ffh;
@@ -257,6 +259,10 @@ sub flush_log
 # in: code, messsage
 sub save_status
 {
+  return if ( $_[0] == 0 && $ok_status_posted != 0 );
+
+  $ok_status_posted = ( $_[0] == 0 );
+
   if ( defined( $o{ 'state file tpl' } ) )
   {
     my $file = $o{ 'state file tpl' };
